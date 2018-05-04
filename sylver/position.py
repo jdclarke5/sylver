@@ -59,7 +59,7 @@ class Semigroup(object):
         self.frobenius = self._get_frobenius()
 
         # Check if irreducible
-        self.is_irreducible, self.irreducible_type = \
+        self.is_irreducible, self.irreducible_type, self.antisymm_fails = \
             self._check_irreducible()
 
         # Get coordinates, i.e. the m-tuple (with m the 
@@ -90,6 +90,7 @@ class Semigroup(object):
             "\n genus: {}"
             "\n is_irreducible: {}"
             "\n irreducible_type: {}"
+            "\n antisymm_fails: {}"
             #"\n coordinates: {}"
             "\n special_gaps: {}"
             "\n lonely_gaps: {}"
@@ -101,11 +102,31 @@ class Semigroup(object):
                 self.genus,
                 self.is_irreducible,
                 self.irreducible_type,
+                self.antisymm_fails,
                 #self.coordinates,
                 self.special_gaps,
                 self.lonely_gaps,
                 self.ender_gaps)
         )
+
+    def to_json(self):
+        """Returns dict of properties"""
+        # Convert numpy arrays to lists
+        return {
+            "l": self.l.tolist(),
+            "multiplicity": int(self.multiplicity),
+            "generators": self.generators.tolist(),
+            "gaps": self.gaps.tolist(),
+            "frobenius": self.frobenius,
+            "genus": self.genus,
+            "is_irreducible": self.is_irreducible,
+            "irreducible_type": self.irreducible_type,
+            "antisymm_fails": self.antisymm_fails.tolist(),
+            "coordinates": self.coordinates.tolist(),
+            "special_gaps": self.special_gaps.tolist() if self.special_gaps is not None else None,
+            "lonely_gaps": self.lonely_gaps.tolist() if self.lonely_gaps is not None else None,
+            "ender_gaps": self.ender_gaps.tolist() if self.ender_gaps is not None else None,
+        }
 
     def _get_members_and_generators(self):
         """Returns the members of the semigroup as an array
@@ -180,27 +201,34 @@ class Semigroup(object):
     def _check_irreducible(self, members_array=None, frobenius=None):
         """Returns one of three possible tuples indicating
         whether the numerical semigroup is irreducible:
-        (False, None), (True, "symm"), (True, "pseudosymm")."""
+        (False, None, [failures]), 
+        (True, "symm", []), 
+        (True, "pseudosymm", [frobenius/2])."""
 
         members_array = members_array if members_array is not None else self.members_array
         frobenius = frobenius if frobenius is not None else self.frobenius
 
         # Get the array to the Frobenius number
-        array_to_frobenius = np.copy(members_array[:frobenius+1])
+        array_to_frob = np.copy(members_array[:frobenius+1])
+        rvrse_to_frob = np.flip(array_to_frob,0)
+        length = len(array_to_frob)
+        # If length is odd then append middle number to failures list
+        fails = [frobenius/2] if (frobenius%2)==0 else []
+        potential_return_string = "pseudosymm" if (frobenius%2)==0 else "symm"
 
-        # If frobenius is even remove the middle value
-        # Since antisymmetry will fail at middle point
-        if frobenius % 2 == 0:
-            array_to_frobenius = np.delete(array_to_frobenius, [frobenius/2])
-            potential_return_string = "pseudosymm"
-        else:
-            potential_return_string = "symm"
-        
         # Check for antisymmetry
-        if (array_to_frobenius == np.invert(np.flip(array_to_frobenius,0))).all():
-            return True, potential_return_string
+        # The floor/ceil removes middle val if odd in length
+        symm = (
+            np.append(array_to_frob[:math.floor(length/2)],array_to_frob[math.ceil(length/2):])
+            == np.append(rvrse_to_frob[:math.floor(length/2)],rvrse_to_frob[math.ceil(length/2):])
+        )
+        fails = np.append(np.where(symm==True)[0], fails).astype(np.int32)
+
+        if symm.any():
+            # If any are true then not completely antisymmetric
+            return False, None, np.intersect1d(fails, self.gaps)
         else:
-            return False, None
+            return True, potential_return_string, np.intersect1d(fails, self.gaps)
 
     def _get_special_gaps(self):
         """Returns the gaps x such that S union {x} is a
