@@ -1,0 +1,118 @@
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../components/sylver-viz.html">
+
+
+<dom-module id="sylver-app">
+
+  <template>
+
+    <style>
+
+      :host {
+        
+      }
+
+      #content {
+        @apply --layout-horizontal;
+        @apply --layout-justified;
+      }
+
+      #viz-panel {
+        width: 70%;
+      }
+
+      #input-panel {
+        width: 30%;
+      }
+
+    </style>
+
+    <div id="content">
+
+      <div id="viz-panel">
+        <sylver-viz
+          details="[[details]]"
+          mod="[[details.multiplicity]]">
+        </sylver-viz>
+      </div>
+
+      <div id="input-panel">
+        <paper-input id="l-input" value="16"></paper-input>
+        <paper-input id="length-input" value="1000"></paper-input>
+        <paper-checkbox id="find-gaps-checkbox" checked></paper-checkbox>
+        <paper-button on-tap="_getDetails">Hi Ho!</paper-button>
+      </div>
+
+    </div>
+
+  </template>
+
+  <script>
+
+    class SylverApp extends Polymer.Element {
+
+      static get is() { return 'sylver-app'; }
+
+      static get properties() {
+        return {
+
+          details: {
+            type: Object,
+          },
+
+        }
+      }
+
+      static get observers() {
+        return [
+          
+        ]
+      }
+
+			ready() {
+				super.ready();
+			}
+
+      _getDetails() {
+        
+        // Gather query values
+        var query = {
+          l: this.shadowRoot.querySelector("#l-input").value.split(",").map(Number),
+          length: Number(this.shadowRoot.querySelector("#length-input").value),
+          find_gaps: this.shadowRoot.querySelector("#find-gaps-checkbox").checked,
+        }
+
+        // Send the request
+        console.log("Requesting details...");
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function() {
+          if (req.readyState == 4 && req.status == 200) {
+            // Set the details
+            var res = JSON.parse(req.responseText);
+            console.log("Received response: ", res);
+            if (res.error) {
+              console.log("Error: ", res.error);
+            } else {
+              this.set("details", res);
+            }
+          }
+        }.bind(this);
+        req.open("POST", "/get_details", true);
+        req.setRequestHeader("content-type", "application/json");
+        req.send(JSON.stringify(query))
+      
+      }
+
+    }
+
+    window.customElements.define(SylverApp.is, SylverApp);
+
+	</script>
+	
+</dom-module>

@@ -1,0 +1,71 @@
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<dom-module id="sylver-viz">
+
+  <template>
+
+    <style>
+
+      :host {
+        --app-primary-color: #4285f4;
+        --app-secondary-color: black;
+        display: block;
+      }
+
+    </style>
+
+    viz
+
+    [[_stringify(details)]]
+
+    <template is="dom-repeat"></template>
+
+  </template>
+
+  <script>
+
+    class SylverViz extends Polymer.Element {
+
+      static get is() { return 'sylver-viz'; }
+
+      static get properties() {
+        return {
+
+          details: {
+            type: Object,
+          },
+
+          mod: {
+            type: Number,
+          }
+
+        }
+      }
+
+      static get observers() {
+        return [
+          "_update(details)",
+        ]
+      }
+
+			ready() {
+				super.ready();
+			}
+
+      _update() {
+        console.log("got it!", this.details);
+      }
+
+      _stringify(o) {
+        return JSON.stringify(o);
+      }
+
+    }
+
+    window.customElements.define(SylverViz.is, SylverViz);
+
+	</script>
+	
+</dom-module>

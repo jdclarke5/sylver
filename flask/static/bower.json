@@ -1,0 +1,20 @@
+{
+  "name": "sylver",
+  "homepage": "https://github.com/jdclarke5/sylver",
+  "description": "",
+  "main": "",
+  "authors": [
+    "Jackson Clarke"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.6.0"
+  }
+}
