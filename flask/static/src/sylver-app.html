@@ -21,6 +21,7 @@
       #content {
         @apply --layout-horizontal;
         @apply --layout-justified;
+        margin: 20px;
       }
 
       #viz-panel {
@@ -31,6 +32,10 @@
         width: 30%;
       }
 
+      #error {
+        color: red;
+      }
+
     </style>
 
     <div id="content">
@@ -38,15 +43,32 @@
       <div id="viz-panel">
         <sylver-viz
           details="[[details]]"
-          mod="[[details.multiplicity]]">
+          mod="[[details.multiplicity]]"
+          on-number-selected="_handleNumberSelected">
         </sylver-viz>
       </div>
 
-      <div id="input-panel">
-        <paper-input id="l-input" value="16"></paper-input>
-        <paper-input id="length-input" value="1000"></paper-input>
-        <paper-checkbox id="find-gaps-checkbox" checked></paper-checkbox>
-        <paper-button on-tap="_getDetails">Hi Ho!</paper-button>
+      <div id="info-panel">
+
+        <div id="input-panel">
+          <paper-input id="l-input" value="8,25"></paper-input>
+          <paper-input id="length-input" value="1000"></paper-input>
+          <paper-checkbox id="find-gaps-checkbox" checked></paper-checkbox>
+          <paper-button on-tap="_getDetails">Hi Ho Sylver!</paper-button>
+          <paper-button on-tap="_undo">Undo</paper-button>
+        </div>
+
+        <div id="summary-panel">
+          generators: [[details.generators]] <br/>
+          frobenius: [[details.frobenius]] <br/>
+          genus: [[details.genus]] <br/>
+          is_irreducible: [[details.is_irreducible]] <br/>
+          irreducible_type: [[details.irreducible_type]] <br/>
+          lonely_gaps: [[details.lonely_gaps]] <br/>
+          <br/>
+          <span id="error">[[details.error]]</span>
+        </div>
+      
       </div>
 
     </div>
@@ -80,7 +102,7 @@
 			}
 
       _getDetails() {
-        
+
         // Gather query values
         var query = {
           l: this.shadowRoot.querySelector("#l-input").value.split(",").map(Number),
@@ -96,17 +118,26 @@
             // Set the details
             var res = JSON.parse(req.responseText);
             console.log("Received response: ", res);
-            if (res.error) {
-              console.log("Error: ", res.error);
-            } else {
-              this.set("details", res);
-            }
+            this.set("details", res);
           }
         }.bind(this);
         req.open("POST", "/get_details", true);
         req.setRequestHeader("content-type", "application/json");
         req.send(JSON.stringify(query))
       
+      }
+
+      _handleNumberSelected(e) {
+        var lInput = this.shadowRoot.querySelector("#l-input");
+        lInput.value = lInput.value+","+e.detail.number;
+        this._getDetails();
+      }
+
+      _undo() {
+        var lInput = this.shadowRoot.querySelector("#l-input");
+        var l = lInput.value.split(",");
+        lInput.value = l.slice(0,l.length-1).join(",");
+        this._getDetails();
       }
 
     }
