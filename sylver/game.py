@@ -11,11 +11,11 @@ class Game():
     """
     Manages the game history.
     """
-    def __init__(self, seeds, length):
+    def __init__(self, seeds, length, verbose=True):
         """
         Initialised in the same way as a position.
         """
-        self.history = [position.Position(seeds, length)]
+        self.history = [position.Position(seeds, length, verbose=verbose)]
 
     @property
     def state(self):

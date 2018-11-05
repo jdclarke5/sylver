@@ -63,10 +63,7 @@ class Position(object):
             print(self)
 
     def __repr__(self):
-        return "Position({}, {})".format(
-            self.generators.tolist(),
-            self.length
-        )
+        return "Position({})".format(self.generators.tolist())
 
     def __str__(self):
         return json.dumps(self.asdict(), indent=2)
@@ -201,6 +198,7 @@ class Position(object):
         for consistent computation by our brute force methods.
         Require max(generators) Trues at the end of the members_array.
         """
+        max_gen = np.max(self.generators)
         if not self.members_array[-max_gen:].all():
             raise ValueError("Length insufficient; must be Frobenius + max(gens) + 1 long!")
 
