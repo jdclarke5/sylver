@@ -53,18 +53,18 @@
         <div id="input-panel">
           <paper-input id="l-input" value="8,25"></paper-input>
           <paper-input id="length-input" value="1000"></paper-input>
-          <paper-checkbox id="find-gaps-checkbox" checked></paper-checkbox>
           <paper-button on-tap="_getDetails">Hi Ho Sylver!</paper-button>
           <paper-button on-tap="_undo">Undo</paper-button>
         </div>
 
         <div id="summary-panel">
+          gcd: [[details.gcd]] <br/>
           generators: [[details.generators]] <br/>
+          multiplicity: [[details.multiplicity]] <br/>
           frobenius: [[details.frobenius]] <br/>
           genus: [[details.genus]] <br/>
           is_irreducible: [[details.is_irreducible]] <br/>
           irreducible_type: [[details.irreducible_type]] <br/>
-          lonely_gaps: [[details.lonely_gaps]] <br/>
           <br/>
           <span id="error">[[details.error]]</span>
         </div>
@@ -107,7 +107,6 @@
         var query = {
           l: this.shadowRoot.querySelector("#l-input").value.split(",").map(Number),
           length: Number(this.shadowRoot.querySelector("#length-input").value),
-          find_gaps: this.shadowRoot.querySelector("#find-gaps-checkbox").checked,
         }
 
         // Send the request

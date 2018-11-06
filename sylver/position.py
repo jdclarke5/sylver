@@ -6,6 +6,7 @@ from functools import reduce
 import json
 import math
 import numpy as np
+import warnings
     
 
 class Position(object):
@@ -70,6 +71,7 @@ class Position(object):
 
     @property
     def gaps(self):
+        #return np.where(self.members_array[::self.gcd]==0)[0] * self.gcd
         return np.where(self.members_array==0)[0]
 
     @property
@@ -80,7 +82,8 @@ class Position(object):
     @property
     def genus(self):
         """Returns cardinality of the set of gaps."""
-        return self.length-np.count_nonzero(self.members_array)
+        _arr = self.members_array[::self.gcd]
+        return len(_arr)-np.count_nonzero(_arr)
 
     @property
     def multiplicity(self):
@@ -91,13 +94,17 @@ class Position(object):
         """Returns dict of properties"""
         # Convert numpy arrays to lists
         return {
+            "gcd": self.gcd,
             "generators": self.generators.tolist(),
+            "multiplicity": int(self.multiplicity),
+            "gaps": self.gaps.tolist(),
+            # If the gcd is not equal to 1, then: 
+            # following correspond to result(S/gcd)*gcd
             "frobenius": self.frobenius,
+            # following correspond to result(S/gcd)
             "is_irreducible": self.is_irreducible,
             "irreducible_type": self.irreducible_type,
-            "multiplicity": int(self.multiplicity),
             "genus": self.genus,
-            "gaps": self.gaps.tolist(),
             # "antisymm_fails": self.antisymm_fails.tolist(),
             # "coordinates": self.coordinates.tolist(),
             # "special_gaps": self.special_gaps.tolist() if self.special_gaps is not None else None,
@@ -110,11 +117,10 @@ class Position(object):
         Add a number to the position.
         """
         self._add(n)
+        self._set_gcd(self.generators)
         self._set_frobenius()
         self._check_irreducible()
         if self.verbose:
-            print("Added {}".format(n))
-            print(repr(self))
             print(self)
 
     def apery_set(self, n):
@@ -145,13 +151,16 @@ class Position(object):
             raise ValueError("Seeds must have at least one element.")
         if not (seeds>0).all():
             raise ValueError("Seeds cannot contain non-positive integers")
-        # Not a numerical semigroup if the GCD is not 1
-        gcd = reduce(math.gcd, seeds)
-        if gcd != 1:
-            raise ValueError(
-                "gcd({})={} is not 1. ".format(seeds, gcd)
-            )
+        self._set_gcd(seeds)
         return seeds
+
+    def _set_gcd(self, numbers):
+        """
+        Set the GCD and throw a warning if not 1.
+        """
+        self.gcd = int(reduce(math.gcd, numbers))
+        if self.gcd != 1:
+            warnings.warn("gcd({})={} is not 1.".format(numbers, self.gcd))
 
     def _add(self, n):
         """
@@ -164,7 +173,8 @@ class Position(object):
         if n <= 0:
             raise ValueError("Number must be a positive integer")
         if self.members_array[n]:
-            raise ValueError("Number is not in play")
+            warnings.warn("Number {} is already in members. Skipping.".format(n))
+            return
         # Keep track of generators which will stay after addition
         gens_dict = {}
         for g in self.generators:
@@ -198,9 +208,9 @@ class Position(object):
         for consistent computation by our brute force methods.
         Require max(generators) Trues at the end of the members_array.
         """
-        max_gen = np.max(self.generators)
-        if not self.members_array[-max_gen:].all():
-            raise ValueError("Length insufficient; must be Frobenius + max(gens) + 1 long!")
+        _max_gen = int(np.max(self.generators)/self.gcd)
+        if not self.members_array[::self.gcd][-_max_gen:].all():
+            raise ValueError("Length insufficient; (S/gcd) must be Frobenius + max(gens)/gcd + 1 long!")
 
     def _set_frobenius(self):
         """
@@ -209,16 +219,18 @@ class Position(object):
         _check_sufficient_length has been run during init).
         """
         # Travel from the end and return the first 0 found
-        for i, status in enumerate(np.flip(self.members_array,0)):
+        _arr = self.members_array[::self.gcd]
+        for i, status in enumerate(np.flip(_arr,0)):
             if status==0:
-                self.frobenius = self.length-i-1
+                self.frobenius = (len(_arr)-i-1)*self.gcd
                 break
-            else:
-                self.frobenius = 0
+        else:
+            self.frobenius = 0
         # Set sufficient length for members_array so that
-        # future brute force computations are quicker
-        self.length = int(self.frobenius + np.max(self.generators) + 1)
-        #self.length = self.frobenius + 1
+        # future brute force computations are quicker.
+        # We round up the sufficient length for front-end visuals.
+        sufficient_length = int(self.frobenius + np.max(self.generators) + self.gcd)
+        self.length = sufficient_length + self.multiplicity - (sufficient_length % self.multiplicity)
         self.members_array = self.members_array[:self.length]
 
     def _check_irreducible(self):
@@ -228,24 +240,16 @@ class Position(object):
         Irreducible type is one of: '' (unset), 's' (symmetric),
         or 'p' (pseudosymmetric).
         """
+        _frob = int(self.frobenius/self.gcd)
+        return_string = "pseudosymm" if (_frob%2)==0 else "symm"
         # Get the array to the Frobenius number
-        array_to_frob = np.copy(self.members_array[:self.frobenius+1])
+        # If length of array is odd then remove middle number
+        array_to_frob = np.copy(self.members_array[::self.gcd][:_frob+1])
+        if (_frob%2)==0:
+            array_to_frob = np.delete(array_to_frob, _frob/2)
         rvrse_to_frob = np.flip(array_to_frob, 0)
-        length = len(array_to_frob)
-        # If length is odd then append middle number to failures list
-        fails = [self.frobenius/2] if (self.frobenius%2)==0 else []
-        return_string = "pseudosymm" if (self.frobenius%2)==0 else "symm"
         # Check for antisymmetry
-        # The floor/ceil removes middle val if odd in length
-        symm = (
-            np.append(array_to_frob[:math.floor(length/2)],array_to_frob[math.ceil(length/2):])
-            == np.append(rvrse_to_frob[:math.floor(length/2)],rvrse_to_frob[math.ceil(length/2):])
-        )
-        fails = np.append(np.where(symm==True)[0], fails).astype(np.int32)
-
-        # TODO: Potentially return the failures
-        antisymm_fails = np.intersect1d(fails, self.gaps)
-        if symm.any():
+        if (array_to_frob == rvrse_to_frob).any():
             # If any are true then not completely antisymmetric
             self.is_irreducible = False
             self.irreducible_type = ""

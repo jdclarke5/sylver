@@ -1,5 +1,8 @@
 
-from sylver.position import Semigroup
+import sys
+sys.path.insert(0, "C:\\Users\\Jackson\\Documents\\GitHub\\sylver")
+
+from sylver.position import Position
 
 from flask import (
     Flask,
@@ -18,10 +21,10 @@ def get_details():
     req = request.json
     print("Request received: ", req)
     try:
-        sg = Semigroup(req["l"], req["length"], find_gaps=req["find_gaps"])
+        p = Position(req["l"], req["length"])
         r = { 
             "error": None,
-            **sg.to_json(),
+            **p.asdict(),
         }
     except ValueError as e:
         r = {

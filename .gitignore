@@ -4,3 +4,4 @@
 \.vscode/
 
 flask/static/bower_components/
+flask/static/package-lock.json

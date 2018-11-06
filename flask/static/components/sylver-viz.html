@@ -82,10 +82,10 @@
             on-click="_handleClick"
             number$=[[cell.number]]
             generator$=[[cell.generator]]
-            gap$=[[cell.gap]]
-            antisymm-fail$=[[cell.antisymmFail]]
+            gap$=[[cell.gap]]>
+            <!-- antisymm-fail$=[[cell.antisymmFail]]
             ender-gap$=[[cell.enderGap]]
-            special-gap$=[[cell.specialGap]]>
+            special-gap$=[[cell.specialGap]]> -->
             <!-- identifiers -->
             <div class="ender-gap"></div>
             <div class="special-gap"></div>
@@ -143,7 +143,7 @@
         // Create rows based on details and mod
         var rows = [];
         // Maximum number to include
-        var max_num = Math.max(...this.details.generators, this.details.frobenius);
+        var max_num = Math.max(...this.details.generators, ...this.details.gaps);
         // There are mod rows
         for (var i = 0; i < this.mod; i++) {
           var row = [];
@@ -164,9 +164,9 @@
         // Fill trues for appropriate properties
         this._fillRow(rows, this.details.gaps, "gap");
         this._fillRow(rows, this.details.generators, "generator");
-        this._fillRow(rows, this.details.ender_gaps, "enderGap");
-        this._fillRow(rows, this.details.special_gaps, "specialGap");
-        this._fillRow(rows, this.details.antisymm_fails, "antisymmFail");
+        // this._fillRow(rows, this.details.ender_gaps, "enderGap");
+        // this._fillRow(rows, this.details.special_gaps, "specialGap");
+        // this._fillRow(rows, this.details.antisymm_fails, "antisymmFail");
         // Update rows array
         this.set("rows", rows);
       }
