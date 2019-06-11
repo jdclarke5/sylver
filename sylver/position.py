@@ -43,6 +43,8 @@ class Position(object):
         self._set_frobenius()
         # Check irreducibility
         self._check_irreducible()
+        # Assign empty status
+        self.status = ""
 
         # # Get coordinates, i.e. the m-tuple (with m the 
         # # multiplicity of S) with i'th entry equal to the 
@@ -64,10 +66,10 @@ class Position(object):
             print(self)
 
     def __repr__(self):
-        return "Position({})".format(self.generators.tolist())
+        return "{}".format(self.generators.tolist())
 
     def __str__(self):
-        return json.dumps(self.asdict(), indent=2)
+        return json.dumps(self.as_dict(), indent=2, sort_keys=True)
 
     @property
     def gaps(self):
@@ -90,21 +92,24 @@ class Position(object):
         """Returns least positive integer belonging to P."""
         return np.min(self.generators)
 
-    def asdict(self):
+    def as_dict(self):
         """Returns dict of properties"""
         # Convert numpy arrays to lists
         return {
-            "gcd": self.gcd,
             "generators": self.generators.tolist(),
+            "gcd": self.gcd,
             "multiplicity": int(self.multiplicity),
             "gaps": self.gaps.tolist(),
-            # If the gcd is not equal to 1, then: 
-            # following correspond to result(S/gcd)*gcd
+            "genus": self.genus,
+            # If the gcd is not equal to 1, then
+            # frobenius corresponds to frobenius(S/gcd)*gcd
             "frobenius": self.frobenius,
-            # following correspond to result(S/gcd)
+            # If the gcd is not equal to 1, then
+            # is_irreducible corresponds to is_irreducible(S/gcd)
             "is_irreducible": self.is_irreducible,
             "irreducible_type": self.irreducible_type,
-            "genus": self.genus,
+            # Status
+            "status": self.status,
             # "antisymm_fails": self.antisymm_fails.tolist(),
             # "coordinates": self.coordinates.tolist(),
             # "special_gaps": self.special_gaps.tolist() if self.special_gaps is not None else None,
@@ -241,7 +246,7 @@ class Position(object):
         or 'p' (pseudosymmetric).
         """
         _frob = int(self.frobenius/self.gcd)
-        return_string = "pseudosymm" if (_frob%2)==0 else "symm"
+        return_string = "p" if (_frob%2)==0 else "s"
         # Get the array to the Frobenius number
         # If length of array is odd then remove middle number
         array_to_frob = np.copy(self.members_array[::self.gcd][:_frob+1])
@@ -256,6 +261,25 @@ class Position(object):
         else:
             self.is_irreducible = True
             self.irreducible_type = return_string
+
+    def store(self, database):
+        """
+        Store in a mongo database
+        """
+        # Without gaps or genus (for now)
+        _dict = self.as_dict()
+        _dict.pop("gaps")
+        _dict.pop("genus")
+        database["positions"].update_one(
+            {"_repr": repr(self)},
+            {
+                "$set": {
+                    "_repr": self.__repr__(),
+                    **_dict,
+                }
+            },
+            upsert=True,
+        )
 
     # def _get_special_gaps(self):
     #     """Returns the gaps x such that S union {x} is a
