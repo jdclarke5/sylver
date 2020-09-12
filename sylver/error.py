@@ -1,0 +1,3 @@
+
+class LengthError(ValueError):
+    pass
