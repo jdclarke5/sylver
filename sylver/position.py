@@ -69,10 +69,10 @@ class Position(object):
         self._set_irreducible()
 
     def __repr__(self):
-        return "Position({})".format(self.generators)
+        return f"Position({self.generators})"
 
     def __str__(self):
-        generators = "{}".format(self.generators)
+        generators = str(self.generators)
         return "{{{}}}".format(generators[1:-1])
 
     @property
@@ -108,6 +108,7 @@ class Position(object):
     def to_dict(self):
         """Returns dict of properties."""
         return {
+            "name": self.name,
             "generators": self.generators,
             "gcd": self.gcd,
             "multiplicity": self.multiplicity,
@@ -117,7 +118,7 @@ class Position(object):
         }
 
     def copy(self):
-        """Return a copy of this object."""
+        """Return a (deep) copy of this object."""
         return deepcopy(self)
 
     def add(self, n, inplace=False):

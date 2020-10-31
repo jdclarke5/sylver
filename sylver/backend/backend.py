@@ -15,19 +15,14 @@ class BaseBackend():
         """Get the status of a position.
         """
         raise NotImplementedError()
-    
-    def get_id(self, position):
-        """Get the ID for a position (default to position name).
-        """
-        return position.name
 
-class LocalBackend(BaseBackend):
+class MemoryBackend(BaseBackend):
 
     def __init__(self):
         self.positions = {}
 
     def save(self, position, status, replies):
-        key = self.get_id(position)
+        key = position.name
         existing = self.positions.get(key, {})
         self.positions[key] = {
             **position.to_dict(),
@@ -36,5 +31,5 @@ class LocalBackend(BaseBackend):
         }
     
     def get_status(self, position):
-        key = self.get_id(position)
+        key = position.name
         return self.positions.get(key, {}).get("status")

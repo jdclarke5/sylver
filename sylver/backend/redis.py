@@ -9,7 +9,7 @@ import redis
 class RedisBackend(BaseBackend):
 
     def __init__(self, **kwargs):
-        """Initialise Redis client by passing **kawrgs to `redis.Redis`.
+        """Initialise Redis client by passing **kwargs to `redis.Redis`.
         """
         self.redis = redis.Redis(**kwargs)
     
@@ -30,7 +30,7 @@ class RedisBackend(BaseBackend):
     def save(self, position, status, replies):
         """Redis implementation of BaseBackend method.
         """
-        key = self.get_id(position)
+        key = position.name
         existing = self.get(key) or {}
         entry = {
             **position.to_dict(),
@@ -42,6 +42,6 @@ class RedisBackend(BaseBackend):
     def get_status(self, position):
         """Redis implementation of BaseBackend method.
         """
-        key = self.get_id(position)
+        key = position.name
         existing = self.get(key) or {}
         return existing.get("status", None)
